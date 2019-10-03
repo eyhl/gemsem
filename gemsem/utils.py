@@ -16,9 +16,9 @@ def L_curve(rho, eta, alpha, truncate=False):
         truncate (int): option to not include the first elements of misfit_list and model_norm_list
 
     Returns:
-        corner_alpha (float):
-        corner_index (int):
-        kappa (float ndarray):
+        corner_alpha (float): value of the chosen alpha
+        corner_index (int): index of the chosen alpha
+        kappa (float ndarray): a vector of all curvatures
 
     Converted from:
     Parameter Estimation and Inverse Problems, 2nd edition, 2011
@@ -60,7 +60,7 @@ def L_curve(rho, eta, alpha, truncate=False):
     if truncate:
         kappa = np.copy(kappa[truncate::])
 
-    corner_index = np.argmax(np.abs(kappa[1:-1]))
+    corner_index = np.argmax(np.abs(kappa))
     corner_alpha = alpha[corner_index]  # the optimum alpha as found in the L curve corner
     return corner_alpha, corner_index, kappa
 
