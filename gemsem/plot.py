@@ -333,7 +333,8 @@ def plot_field_map(model, feature, radius, **kwargs):
         return
 
 
-def plot_hist_residuals(residuals, fit=True, savefig=False, pdf_type="laplace", title='Histogram of residuals'):
+def plot_hist_residuals(residuals, fit=True, savefig=False, pdf_type="laplace", title='Histogram of residuals',
+                        ylim=None, n_bins=None, legend_size=9.5):
     """
     Plots errors of a model. Default plots only histogram.
 
@@ -349,58 +350,87 @@ def plot_hist_residuals(residuals, fit=True, savefig=False, pdf_type="laplace", 
     @author: Eigil Y. H. Lippert, Student DTU Space, <s132561@student.dtu.dk>
 
     """
+    if n_bins == None:
+        n_bins = len(residuals)
 
     if pdf_type == "laplace":
-        # create histogram of residuals
-        plt.hist(residuals, bins=len(residuals), density=True)
-        xt = plt.xticks()[0]
+        xmin, xmax = min(residuals), max(residuals)
+        lnspc = np.linspace(xmin, xmax, len(residuals))
 
+        # create histogram of residuals
+        plt.hist(residuals, bins=n_bins, density=True, alpha=0.8, color='#0504aa')
         if fit:
-            xmin, xmax = min(xt), max(xt)
-            lnspc = np.linspace(xmin, xmax, len(residuals))
             # fit laplace distribution to histogram
-            m, s = stats.laplace.fit(residuals)  # get mean and standard deviation
+            m, s = stats.laplace.fit(residuals)  # get location and dispersion params
             pdf_g = stats.laplace.pdf(lnspc, m, s)  # now get theoretical values in the interval
-            plt.plot(lnspc, pdf_g, label="Laplace pdf fit")  # plot it
+            plt.plot(lnspc, pdf_g, label="Laplace pdf")  # plot it
+            plt.legend(loc=2, prop={'size': legend_size})
+
             if title == 'Histogram of residuals':
-                title = 'Histogram of residuals' + ',' + r'$\bf{\mu=%.3f,\ \sigma=%.3f}$' % (m, s)
+                title = 'Histogram of residuals' + ', ' + r'$\bf{\mu=%.3f,\ \sigma=%.3f}$' % (m, s)
             plt.title(title, fontsize=14)
         else:
             plt.title(title, fontsize=14)
 
-        plt.xlabel('Error values, [nT]', fontsize=14)
-        plt.ylabel('Count', fontsize=14)
-        ax = plt.gca()
-        ax.yaxis.grid(which='major', color='grey', linestyle='dashed')
-        ax.xaxis.grid(which='major', color='grey', linestyle='dashed')
-        ax.set_axisbelow(True)
-
     elif pdf_type == "normal":
+        xmin, xmax = min(residuals), max(residuals)
+        lnspc = np.linspace(xmin, xmax, len(residuals))
+
         # create histogram of residuals
-        plt.hist(residuals, bins=len(residuals), density=True)
-        xt = plt.xticks()[0]
+        plt.hist(residuals, bins=n_bins, density=True, alpha=0.8, color='#0504aa')
+
         if fit:
-            xmin, xmax = min(xt), max(xt)
-            lnspc = np.linspace(xmin, xmax, len(residuals))
+            # fit normal distribution to histogram
+            m, s = stats.norm.fit(residuals)  # get location and dispersion params
+            pdf_g = stats.norm.pdf(lnspc, m, s)  # now get theoretical values in the interval
+            plt.plot(lnspc, pdf_g, label="Normal pdf")  # plot it
+            plt.legend(loc=2, prop={'size': legend_size})
+
+            if title == 'Histogram of residuals':
+                title = 'Histogram of residuals' + ', ' + r'$\bf{\mu=%.3f,\ \sigma=%.3f}$' % (m, s)
+            plt.title(title, fontsize=14)
+        else:
+            plt.title(title, fontsize=14)
+
+    elif pdf_type == "both":
+        xmin, xmax = min(residuals), max(residuals)
+        lnspc = np.linspace(xmin, xmax, len(residuals))
+
+        # create histogram of residuals
+        plt.hist(residuals, bins=n_bins, density=True, alpha=0.8, color='#0504aa')
+
+        if fit:
             # fit laplace distribution to histogram
             m, s = stats.norm.fit(residuals)  # get mean and standard deviation
             pdf_g = stats.norm.pdf(lnspc, m, s)  # now get theoretical values in the interval
-            plt.plot(lnspc, pdf_g, label="Normal pdf fit")  # plot it
+            legend_string = 'Normal pdf fit' + ', ' + r'$\bf{\mu=%.3f,\ \sigma=%.3f}$' % (m, s)
+            plt.plot(lnspc, pdf_g, label=legend_string)  # plot it
+
+            m1, s1 = stats.laplace.fit(residuals)  # get location and dispersion params
+            pdf_g = stats.laplace.pdf(lnspc, m1, s1) # now get theoretical values in the interval
+            legend_string = 'Laplace pdf fit' + ', ' + r'$\bf{\mu=%.3f,\ b=%.3f}$' % (m1, s1)
+            plt.plot(lnspc, pdf_g, label=legend_string)  # plot it
+            plt.legend(loc=2, prop={'size': legend_size})
+
             if title == 'Histogram of residuals':
-                title = 'Histogram of residuals' + ',' + r'$\bf{\mu=%.3f,\ \sigma=%.3f}$' % (m, s)
+                title = 'Histogram of residuals'
             plt.title(title, fontsize=14)
         else:
             plt.title(title, fontsize=14)
 
-        plt.xlabel('Error values, [nT]', fontsize=14)
-        plt.ylabel('Count', fontsize=14)
-        ax = plt.gca()
-        ax.yaxis.grid(which='major', color='grey', linestyle='dashed')
-        ax.xaxis.grid(which='major', color='grey', linestyle='dashed')
-        ax.set_axisbelow(True)
     else:
-        print('Error: Please choose either "norm" for normal distributed residuals, '
+        print('Error: Please choose either "normal" for normal distributed residuals, '
               'or "laplace" for laplace distributed residuals')
+
+    plt.xlabel('Error values, [nT]', fontsize=14)
+    plt.ylabel('Density', fontsize=14)
+    ax = plt.gca()
+    ax.yaxis.grid(which='major', color='grey', linestyle='dashed')
+    ax.xaxis.grid(which='major', color='grey', linestyle='dashed')
+    ax.set_axisbelow(True)
+
+    if ylim != None:
+        ax.set_ylim([ylim[0], ylim[1]])
 
     if savefig:
         plt.savefig('Error_histogram.png')
@@ -410,7 +440,65 @@ def plot_hist_residuals(residuals, fit=True, savefig=False, pdf_type="laplace", 
     return
 
 
-def plot_L_curve(misfit_norm_list, model_norm_list, alpha_index, truncate=False, point=True, savefig=False):
+# def plot_L_curve(misfit_norm_list, model_norm_list, alpha_index, truncate=False, point=True,
+#                  savefig=False, zoom=False, labels=False):
+#     """
+#     Plots the L curve, and places a red dot on the chosen alpha as default
+#
+#     Args:
+#         misfit_list (float ndarray): list of misfit values for models evaluated at different alphas
+#         model_norm_list (float ndarray): list of model norm values for models evaluated at different alphas
+#         alpha_index (int): the index of the alpha corresponding to a set of [misfit, model_norm]-coordinates.
+#         truncate (int): option to not include the first elements of misfit_list and model_norm_list
+#         point (boolean): set to False if the coordinate-point, corresponding to the chosen alpha should not be plotted.
+#         savefig (boolean): save figure defaults False
+#
+#     Returns:
+#         None
+#
+#     @author: Eigil Y. H. Lippert, Student DTU Space, <s132561@student.dtu.dk>
+#     """
+#
+#     fig, ax = plt.subplots()
+#     ax.plot(misfit_norm_list, model_norm_list, 'b.', label='L-curve')
+#     if truncate:
+#         ax.plot(misfit_norm_list[truncate::], model_norm_list[truncate::], 'g.', label='L-curve, truncated')
+#         misfit_norm_list = misfit_norm_list[truncate::]
+#         model_norm_list = model_norm_list[truncate::]
+#
+#     if point:
+#         ax.plot(misfit_norm_list[alpha_index], model_norm_list[alpha_index], 'ro', label=r'$\alpha^2$', alpha=0.5)
+#
+#     ax.set_xscale("log", basex=10)
+#     ax.set_yscale("log", basey=10)
+#     ax.grid(True, which="both", ls="-")
+#     ax.minorticks_on()
+#
+#     if labels:
+#         ax.set_xlabel(labels[0])
+#         ax.set_ylabel(labels[1])
+#     else:
+#         ax.set_xlabel('Misfit 2-norm, log-scale')
+#         ax.set_ylabel('Model norm, log-scale')
+#
+#     if zoom:
+#         ax.set_xlim([zoom[0], zoom[1]])
+#         ax.set_ylim([zoom[2], zoom[3]])
+#
+#     ax.set_title('L-curve', fontsize=14, fontweight='bold')
+#     plt.legend()
+#     if savefig:
+#         string = 'L_curve' + '.png'
+#         plt.savefig(string)
+#
+#     plt.show()
+#     return
+def plot_L_curve(misfit_norm_list, model_norm_list, alpha_index, truncate=False, point=True,
+                 xlabel='Misfit 2-norm, log-scale',
+                 ylabel='Model norm, log-scale', annotate_alpha=None,
+                 subs=[1.0, 2.0, 3.0, 5.0],
+                 rot=35,
+                 savefig = False):
     """
     Plots the L curve, and places a red dot on the chosen alpha as default
 
@@ -420,6 +508,10 @@ def plot_L_curve(misfit_norm_list, model_norm_list, alpha_index, truncate=False,
         alpha_index (int): the index of the alpha corresponding to a set of [misfit, model_norm]-coordinates.
         truncate (int): option to not include the first elements of misfit_list and model_norm_list
         point (boolean): set to False if the coordinate-point, corresponding to the chosen alpha should not be plotted.
+        xlabel (str): xlabel text
+        ylabel (str): ylabel text
+        annotate_alpha (float list): list of alphas. used for annotating alphas on the plot
+        subs (float list): ticks to show per decade. default [1.0, 2.0, 3.0, 5.0]  #
         savefig (boolean): save figure defaults False
 
     Returns:
@@ -427,7 +519,6 @@ def plot_L_curve(misfit_norm_list, model_norm_list, alpha_index, truncate=False,
 
     @author: Eigil Y. H. Lippert, Student DTU Space, <s132561@student.dtu.dk>
     """
-
     fig, ax = plt.subplots()
     ax.plot(misfit_norm_list, model_norm_list, 'b.', label='L-curve')
     if truncate:
@@ -440,21 +531,71 @@ def plot_L_curve(misfit_norm_list, model_norm_list, alpha_index, truncate=False,
 
     ax.set_xscale("log", basex=10)
     ax.set_yscale("log", basey=10)
-    ax.set_xlabel('Misfit 2-norm, log-scale')
-    ax.set_ylabel('Model norm, log-scale')
-    #
-    ax.grid(True, which="both", ls="-")
-    ax.minorticks_on()
+    ax.set_xlabel(xlabel, fontweight='bold')
+    ax.set_ylabel(ylabel, fontweight='bold')
+
+    ax.grid(True, which="both", ls="--")
+
+    # format x-axis
+    ax.xaxis.set_minor_locator(ticker.LogLocator(subs=subs))  # set the ticks position
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())  # remove the major ticks
+    ax.xaxis.set_minor_formatter(ticker.FuncFormatter(ticks_format))  # add the custom ticks
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=rot)
+    plt.setp(ax.xaxis.get_minorticklabels(), rotation=rot)
+
+    # format y-axis
+    ax.yaxis.set_minor_locator(ticker.LogLocator(subs=subs))  # set the ticks position
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())  # remove the major ticks
+    ax.yaxis.set_minor_formatter(ticker.FuncFormatter(ticks_format))  # add the custom ticks
+
+    alphas_chosen = []
+    alphas_chosen_idx = []
+    if annotate_alpha is not None:
+        if len(annotate_alpha)==1:
+            y, x = 10 ** np.log10(model_norm_list[alpha_index]), 10 ** np.log10(misfit_norm_list[alpha_index])
+            ax.plot(x, y, marker='o', color='green', fillstyle='none', markersize=10, markeredgewidth=2)
+            ax.annotate('{0:.2E}'.format(annotate_alpha[0]), xy=(x + x * 1e-2, y + y * 5e-1))
+            alphas_chosen.append(annotate_alpha[0])
+        else:
+            for i, txt in enumerate(annotate_alpha):
+                if i == 0:
+                    y, x = 10**np.log10(model_norm_list[i]), 10**np.log10(misfit_norm_list[i])
+                    ax.plot(x, y, marker='o', color='green', fillstyle='none', markersize=10, markeredgewidth=2)
+                    ax.annotate('{0:.2E}'.format(txt), xy=(x+x*3e-2, y+y*1e-2))
+                    alphas_chosen.append(txt)
+                    alphas_chosen_idx.append(i)
+
+                elif i == alpha_index:
+                    y, x = 10 ** np.log10(model_norm_list[i]), 10 ** np.log10(misfit_norm_list[i])
+                    ax.plot(x, y, marker='o', color='green', fillstyle='none', markersize=10, markeredgewidth=2)
+                    ax.annotate('{0:.2E}'.format(txt), xy=(x + x * 1e-2, y + y * 5e-2))
+                    alphas_chosen.append(txt)
+                    alphas_chosen_idx.append(i)
+
+                elif i == len(annotate_alpha)-1:
+                    y, x = 10 ** np.log10(model_norm_list[i]), 10 ** np.log10(misfit_norm_list[i])
+                    ax.plot(x, y, marker='o', color='green', fillstyle='none', markersize=10, markeredgewidth=2)
+                    ax.annotate('{0:.2E}'.format(txt), xy=(x - x * 8e-2, y + y * 8e-2))
+                    alphas_chosen.append(txt)
+                    alphas_chosen_idx.append(i)
+
+                elif (i == int(alpha_index/2)) or (i == int((annotate_alpha.size + alpha_index)/2)):
+                    y, x = 10 ** np.log10(model_norm_list[i]), 10 ** np.log10(misfit_norm_list[i])
+                    ax.plot(x, y, marker='o', color='green', fillstyle='none', markersize=10, markeredgewidth=2)
+                    ax.annotate('{0:.2E}'.format(txt), xy=(x + x * 2e-2, y + y * 5e-2))
+                    alphas_chosen.append(txt)
+                    alphas_chosen_idx.append(i)
 
     ax.set_title('L-curve', fontsize=14, fontweight='bold')
     plt.legend()
+    plt.gcf().subplots_adjust(left=0.15, bottom=0.15)
+
     if savefig:
         string = 'L_curve' + '.png'
         plt.savefig(string)
 
     plt.show()
-    return
-
+    return alphas_chosen, alphas_chosen_idx
 
 def power_spectrum(model, ratio, degree, plot=True, savefig=False):
     '''
@@ -516,3 +657,25 @@ def power_spectrum(model, ratio, degree, plot=True, savefig=False):
         plt.show()
 
     return wn
+
+
+def ticks_format(value, index):
+    """
+    Function for fixing scientific ticklabel formatting in log-log plot.
+    get the value and returns the value as:
+       integer: [0,99]
+       1 digit float: [0.1, 0.99]
+       n*10^m: otherwise
+    To have all the number of the same size they are all returned as latex strings
+    """
+    exp = np.floor(np.log10(value))
+    base = value/10**exp
+    if exp == 0 or exp == 1:
+        return '${0:d}$'.format(int(value))
+    if exp == -1:
+        return '${0:.1f}$'.format(value)
+    else:
+        if int(base) == 1:
+            return '$10^{{{0:d}}}$'.format(int(exp))
+        else:
+            return '${0:d}\\times10^{{{1:d}}}$'.format(int(base), int(exp))
